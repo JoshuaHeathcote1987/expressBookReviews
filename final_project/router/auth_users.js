@@ -3,28 +3,52 @@ const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
-let users = [];
-
-const isValid = (username)=>{ //returns boolean
-//write code to check is the username is valid
-}
-
-const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
-}
+let users = [{
+  username: "username",
+  password: "password"
+},
+];
 
 //only registered users can login
-regd_users.post("/login", (req,res) => {
+regd_users.post("/login", (req, res) => {
   //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  const username = req.body.username;
+  const password = req.body.password;
+
+  if (!username || !password) {
+    return res.status(404).json({ message: "Please provide us with the username and password." });
+  }
+
+  const userExists = users.filter((user) => user.username == username && user.password == password);
+
+  if (userExists) {
+    let accessToken = jwt.sign({
+      data: password
+    }, 'access', { expiresIn: 60 * 60 });
+    req.session.authorization = {
+      accessToken, username
+    }
+    return res.status(200).send("You have logged in successfully!");
+  }
+
+  if (!userExists) {
+    return res.status(208).json({ message: "Incorrect username and password, please try again." })
+  }
 });
 
-// Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+regd_users.put("/review/:isbn", (req, res) => {
+  const isbn = req.params.isbn;
+  const review = req.body.review;
+  const book = books[isbn];
+  book.reviews = { 'post': review };
+  return res.send(book);
+});
+
+regd_users.delete("/review/:isbn", (req, res) => {
+  const isbn = req.params.isbn;
+  const username = req.session.authorization.username;
+  return res.send(username);
 });
 
 module.exports.authenticated = regd_users;
-module.exports.isValid = isValid;
 module.exports.users = users;
